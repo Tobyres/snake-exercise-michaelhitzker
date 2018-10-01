@@ -105,6 +105,8 @@ function initBoard() {
 }
 
 function gameOver(){
+  clearScreen();
+  
   var textLength = " Game over ".length;
   if(textLength%2 == 0){
     var whitePaddingLeft = SIZE-(textLength)/2;
@@ -113,30 +115,66 @@ function gameOver(){
     var whitePaddingLeft = SIZE-(textLength-1)/2-1;
     var whitePaddingRight = (SIZE*2-textLength-whitePaddingLeft)-1;
   }
+
+  drawGreyLine();
+
   for(var i= 0; i<SIZE; i++){
-    if((SIZE%2==0 && i== SIZE/2) || (SIZE%2 == 1 && i == (SIZE-1)/2)){
-      for(var j = 0; j<whitePaddingLeft; j++){
-        drawFigures(i, j);
-      }
+    drawGreyBG();
+    if((SIZE%2==0 && i== SIZE/2) || (SIZE%2 == 1 && i == (SIZE-1)/2)){ //The middle
+
+      drawWhitePadding(i, whitePaddingLeft);
 
       cursor.red()
           .bg.grey()
           .write(" Game  Over ")
           .bg.reset();
 
-      for(var j = 0; j<whitePaddingRight; j++){
-        drawFigures(i, j);
-      }
+      drawWhitePadding(i, whitePaddingRight);
     }else{
-      for(var j = 0; j<SIZE*2; j++){
-        drawFigures(i, j);
-      }
+      drawBoardLine(i);
     }
-    cursor.write("\n");
+    drawGreyBG();
+    breakLine();
   }
+  
+  drawGreyLine();
+
+  breakLine();
   cursor.reset();
-  cursor.write("\n");
+  breakLine();
+
   process.exit();
+}
+
+function drawBoardLine(i){
+  for(var j = 0; j<SIZE*2; j++){
+    drawFigures(i, j);
+  }
+}
+
+function drawWhitePadding(i, padding){
+  for(var j = 0; j<padding; j++){
+    drawFigures(i, j);
+  }
+}
+
+function breakLine(){
+  cursor.write("\n");
+}
+
+function drawGreyBG(){
+  cursor.bg.grey().write(" ");
+}
+
+function drawGreyLine(){
+  for(var j = 0; j<SIZE*2+2; j++){
+    drawGreyBG();
+  }
+  breakLine();
+}
+
+function clearScreen(){
+  process.stdout.write('\x1Bc');
 }
 
 function randomInt(min, max) {
@@ -145,16 +183,17 @@ function randomInt(min, max) {
 }
 
 function drawBoard() {
-  process.stdout.write('\x1Bc');
+  clearScreen();
+  drawGreyLine();
   for (var i = 0; i < SIZE; i++) {
-    for (var j = 0; j < SIZE*2; j++) {//to make it square
-      drawFigures(i, j);
-    }
-    cursor.write("\n");
+    drawGreyBG();
+    drawBoardLine(i);
+    drawGreyBG();
+    breakLine();
   }
-
+  drawGreyLine();
   cursor.reset();
-  cursor.write("\n");
+  breakLine();
 }
 
 function drawFigures(i, j){
