@@ -1,179 +1,208 @@
-const SIZE = 10;
+const ansi = require("ansi");
+const keypress = require("keypress");
 
-var ansi = require("ansi");
+const HEIGHT = 11;
+const WIDTH = 20;
+const GAME_OVER_TEXT = " Game  Over ";
+
 var cursor = ansi(process.stdout);
-var keypress = require("keypress");
+
 keypress(process.stdin);
 
 process.stdin.setRawMode(true);
 process.stdin.resume();
 
-var board = new Array(SIZE);
-var snakePosX,snakePosY;
-var foodPosX, foodPosY;
+var snakePosX, snakePosY;
+var foodPosX, foodPosY = 0;
+var movingDirection = 1 //0=up, 1=right, 2=down, 3=left
 
-makeArray2D();
+var points = 0;
+var speed = 1;
 
-initBoard();
 addKeyListener();
-drawBoard();
+drawEmptyBoard();
+initBoard();
+autoMove();
 
-function addKeyListener(){
-  process.stdin.on("keypress", function(ch,key){
+function addKeyListener() {
+  process.stdin.on("keypress", function (ch, key) {
     //console.log(key);
-    if(key && key.ctrl && key.name=="c"){
+    if (key && key.ctrl && key.name == "c") {
       process.stdin.pause();
+      process.exit();
     }
-    if(key && key.name=="up"){
-      moveUp();
-    }
-
-    if(key && key.name=="down"){
-      moveDown();
+    if (key && key.name == "up") {
+      movingDirection = 0;
     }
 
-    if(key && key.name=="left"){
-      moveLeft();
+    if (key && key.name == "down") {
+      movingDirection = 2;
     }
 
-    if(key && key.name=="right"){
-      moveRight();
+    if (key && key.name == "left") {
+      movingDirection = 3;
+    }
+
+    if (key && key.name == "right") {
+      movingDirection = 1;
     }
   })
 }
 
-function moveSnake(newX,newY){
-  console.log(newX+", "+newY);
-  console.log(snakePosX, snakePosY);
-  board[snakePosY][snakePosX]="";
-  board[newY][newX]="Snake";
+function generateApple(){
+  do {
+    foodPosX = randomInt(0, HEIGHT);
+    foodPosY = randomInt(0, HEIGHT);
+
+  } while (foodPosX === snakePosX || foodPosY === snakePosY);
+  cursor.goto(foodPosX+2, foodPosY+2).bg.red().write(" ").reset();
+}
+
+function moveSnake(newX, newY) {
+  //console.log(newX + ", " + newY);
+  //console.log(snakePosX, snakePosY);
+  cursor.goto(snakePosX+2, snakePosY+2).bg.white().write(" ").reset();;
+  cursor.goto(newX+2, newY+2).bg.green().write(" ").reset();;
+  cursor.reset();
   snakePosX = newX;
   snakePosY = newY;
-  drawBoard();
+  checkGotPoint();
+  drawPoints();
+  sleep();
+  // drawBoard();
+}
+
+function checkGotPoint(){
+  if(snakePosX === foodPosX && snakePosY === foodPosY){
+    points++;
+    speed++;
+    generateApple();
+  }
 }
 
 function moveUp() {
-  var newY = snakePosY-1;
-  if(newY<0){
+  movingDirection = 0;
+  var newY = snakePosY - 1;
+  if (newY < 0) {
     gameOver();
   }
-  moveSnake(snakePosX,newY);
+  moveSnake(snakePosX, newY);
 }
 
 function moveDown() {
-  var newY = snakePosY+1;
-  if(newY>=SIZE){
+  movingDirection = 2;
+  var newY = snakePosY + 1;
+  if (newY >= HEIGHT) {
     gameOver();
   }
-  moveSnake(snakePosX,newY);
+  moveSnake(snakePosX, newY);
 }
 
 function moveLeft() {
-  var newX = snakePosX-1;
-  if(newX<0){
+  movingDirection = 3;
+  var newX = snakePosX - 1;
+  if (newX < 0) {
     gameOver();
   }
-  moveSnake(newX,snakePosY);
+  moveSnake(newX, snakePosY);
 }
 
 function moveRight() {
-  var newX = snakePosX+1;
-  if(newX>=SIZE*2){
+  movingDirection = 1;
+  var newX = snakePosX + 1;
+  if (newX >= WIDTH) {
     gameOver();
   }
-  moveSnake(newX,snakePosY);
-}
-
-function makeArray2D() {
-  for (var i = 0; i < board.length; i++) {
-    board[i] = new Array(SIZE);
-  }
+  moveSnake(newX, snakePosY);
 }
 
 function initBoard() {
-  snakePosX = randomInt(0, SIZE);
-  snakePosY = randomInt(0, SIZE);
+  snakePosX = WIDTH/2;
+  snakePosY = HEIGHT/2;
 
-  do {
-    foodPosX = randomInt(0, SIZE);
-    foodPosY = randomInt(0, SIZE);
-  } while (foodPosX === snakePosX || foodPosY === snakePosY);
+  snakePosX = Math.round(snakePosX );
+  snakePosY = Math.round(snakePosY);
 
-  board[snakePosY][snakePosX] = "Snake";
-  board[foodPosY][foodPosX] = "Food";
-
+  generateApple();
 }
 
-function gameOver(){
+function gameOver() {
+  isGameOver = true;
   clearScreen();
-  
-  var textLength = " Game over ".length;
-  if(textLength%2 == 0){
-    var whitePaddingLeft = SIZE-(textLength)/2;
-    var whitePaddingRight = whitePaddingLeft;
-  }else{
-    var whitePaddingLeft = SIZE-(textLength-1)/2-1;
-    var whitePaddingRight = (SIZE*2-textLength-whitePaddingLeft)-1;
+
+  var whitePaddingLeft = 0
+  var whitePaddingRight = 0;
+
+  var textLength = GAME_OVER_TEXT.length;
+  if (textLength % 2 === 0) {
+    whitePaddingLeft = WIDTH / 2 - (textLength) / 2;
+    whitePaddingRight = whitePaddingLeft;
+  } else {
+    whitePaddingLeft = WIDTH / 2 - (textLength) / 2 - 0.5;
+    whitePaddingRight = whitePaddingLeft + 1;
   }
 
+  cursor.reset();
   drawGreyLine();
 
-  for(var i= 0; i<SIZE; i++){
+  for (var i = 0; i < HEIGHT; i++) {
     drawGreyBG();
-    if((SIZE%2==0 && i== SIZE/2) || (SIZE%2 == 1 && i == (SIZE-1)/2)){ //The middle
+    if ((HEIGHT % 2 == 0 && i == HEIGHT / 2) || (HEIGHT % 2 == 1 && i == (HEIGHT - 1) / 2)) { //The middle
 
       drawWhitePadding(i, whitePaddingLeft);
 
       cursor.red()
-          .bg.grey()
-          .write(" Game  Over ")
-          .bg.reset();
+        .bg.grey()
+        .write(GAME_OVER_TEXT)
+        .bg.reset();
 
       drawWhitePadding(i, whitePaddingRight);
-    }else{
-      drawBoardLine(i);
+    } else {
+      drawBoardLine();
     }
     drawGreyBG();
     breakLine();
   }
-  
+
   drawGreyLine();
 
   breakLine();
   cursor.reset();
   breakLine();
 
+  drawPoints();
+
   process.exit();
 }
 
-function drawBoardLine(i){
-  for(var j = 0; j<SIZE*2; j++){
-    drawFigures(i, j);
+function drawBoardLine() {
+  for (var j = 0; j < WIDTH; j++) {
+    cursor.bg.white().write(" ").reset();
   }
 }
 
-function drawWhitePadding(i, padding){
-  for(var j = 0; j<padding; j++){
-    drawFigures(i, j);
+function drawWhitePadding(i, padding) {
+  for (var j = 0; j < padding; j++) {
+    cursor.bg.white().write(" ").reset();
   }
 }
 
-function breakLine(){
+function breakLine() {
   cursor.write("\n");
 }
 
-function drawGreyBG(){
+function drawGreyBG() {
   cursor.bg.grey().write(" ");
 }
 
-function drawGreyLine(){
-  for(var j = 0; j<SIZE*2+2; j++){
+function drawGreyLine() {
+  for (var j = 0; j < WIDTH + 2; j++) {
     drawGreyBG();
   }
   breakLine();
 }
 
-function clearScreen(){
+function clearScreen() {
   process.stdout.write('\x1Bc');
 }
 
@@ -182,26 +211,38 @@ function randomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-function drawBoard() {
+function drawPoints(){
+  cursor.goto(0, HEIGHT+3);
+  cursor.reset();
+  cursor.white().write("Points: "+points);
+  breakLine();
+  cursor.white().write("Speed: "+speed);
+}
+
+function drawEmptyBoard() {
   clearScreen();
   drawGreyLine();
-  for (var i = 0; i < SIZE; i++) {
+  for (var i = 0; i < HEIGHT; i++) {
     drawGreyBG();
-    drawBoardLine(i);
+    drawBoardLine();
     drawGreyBG();
     breakLine();
   }
   drawGreyLine();
   cursor.reset();
   breakLine();
+  drawPoints();
 }
 
-function drawFigures(i, j){
-  if (board[i][j] === "Snake") {
-    cursor.bg.green().write(" ");
-  } else if (board[i][j] === "Food") {
-    cursor.bg.red().write(" "); 
-  } else {
-    cursor.bg.white().write(" "); 
+function autoMove(){
+  switch (movingDirection) {
+    case 0: moveUp(); break;
+    case 1: moveRight(); break;
+    case 2: moveDown(); break;
+    case 3: moveLeft(); break;
   }
+}
+
+function sleep(){
+  setTimeout(autoMove, 1000/speed);
 }
