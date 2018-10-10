@@ -4,18 +4,15 @@ const keypress = require("keypress");
 const HEIGHT = 11;
 const WIDTH = 20;
 const GAME_OVER_TEXT = " Game  Over ";
+const WITH_SOUND = false;
 
 var cursor = ansi(process.stdout);
-
 keypress(process.stdin);
-
 process.stdin.setRawMode(true);
 process.stdin.resume();
-
 var snakePosX, snakePosY;
 var foodPosX, foodPosY = 0;
 var movingDirection = 1 //0=up, 1=right, 2=down, 3=left
-
 var points = 0;
 var speed = 1;
 
@@ -26,7 +23,6 @@ autoMove();
 
 function addKeyListener() {
   process.stdin.on("keypress", function (ch, key) {
-    //console.log(key);
     if (key && key.ctrl && key.name == "c") {
       process.stdin.pause();
       process.exit();
@@ -46,34 +42,30 @@ function addKeyListener() {
     if (key && key.name == "right") {
       movingDirection = 1;
     }
-  })
+  });
 }
 
-function generateApple(){
+function generateApple() {
   do {
     foodPosX = randomInt(0, HEIGHT);
     foodPosY = randomInt(0, HEIGHT);
 
   } while (foodPosX === snakePosX || foodPosY === snakePosY);
-  cursor.goto(foodPosX+2, foodPosY+2).bg.red().write(" ").reset();
+  cursor.goto(foodPosX + 2, foodPosY + 2).bg.red().write(" ").reset();
 }
 
 function moveSnake(newX, newY) {
-  //console.log(newX + ", " + newY);
-  //console.log(snakePosX, snakePosY);
-  cursor.goto(snakePosX+2, snakePosY+2).bg.white().write(" ").reset();;
-  cursor.goto(newX+2, newY+2).bg.green().write(" ").reset();;
-  cursor.reset();
+  cursor.goto(snakePosX + 2, snakePosY + 2).bg.white().write(" ").reset();
+  cursor.goto(newX + 2, newY + 2).bg.green().write(" ").reset();
   snakePosX = newX;
   snakePosY = newY;
   checkGotPoint();
   drawPoints();
   sleep();
-  // drawBoard();
 }
 
-function checkGotPoint(){
-  if(snakePosX === foodPosX && snakePosY === foodPosY){
+function checkGotPoint() {
+  if (snakePosX === foodPosX && snakePosY === foodPosY) {
     points++;
     speed++;
     generateApple();
@@ -117,10 +109,10 @@ function moveRight() {
 }
 
 function initBoard() {
-  snakePosX = WIDTH/2;
-  snakePosY = HEIGHT/2;
+  snakePosX = WIDTH / 2;
+  snakePosY = HEIGHT / 2;
 
-  snakePosX = Math.round(snakePosX );
+  snakePosX = Math.round(snakePosX);
   snakePosY = Math.round(snakePosY);
 
   generateApple();
@@ -211,12 +203,12 @@ function randomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-function drawPoints(){
-  cursor.goto(0, HEIGHT+3);
+function drawPoints() {
+  cursor.goto(0, HEIGHT + 3);
   cursor.reset();
-  cursor.white().write("Points: "+points);
+  cursor.white().write("Points: " + points);
   breakLine();
-  cursor.white().write("Speed: "+speed);
+  cursor.white().write("Speed: " + speed);
 }
 
 function drawEmptyBoard() {
@@ -234,7 +226,10 @@ function drawEmptyBoard() {
   drawPoints();
 }
 
-function autoMove(){
+function autoMove() {
+  if(WITH_SOUND){
+    cursor.beep();
+  }
   switch (movingDirection) {
     case 0: moveUp(); break;
     case 1: moveRight(); break;
@@ -243,6 +238,6 @@ function autoMove(){
   }
 }
 
-function sleep(){
-  setTimeout(autoMove, 1000/speed);
+function sleep() {
+  setTimeout(autoMove, 1000 / speed);
 }
